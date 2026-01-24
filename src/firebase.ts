@@ -3,13 +3,12 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-
-  apiKey: "AIzaSyALl1xRyWoiFouDslY2eIESkL8cHlqEAVc",
-  authDomain: "rifa-526e7.firebaseapp.com",
-  projectId: "rifa-526e7",
-  storageBucket: "rifa-526e7.firebasestorage.app",
-  messagingSenderId: "106478301661",
-  appId: "1:106478301661:web:d613b58b4d031e45930634"
+  apiKey: "AIzaSyBXk8vI6BXCr47gNKovTdZ-kSMrn1Nmjvg",
+  authDomain: "rifa-nova.firebaseapp.com",
+  projectId: "rifa-nova",
+  storageBucket: "rifa-nova.firebasestorage.app",
+  messagingSenderId: "32230185305",
+  appId: "1:32230185305:web:7265a3de8ec2c3f4839448",
 };
 
 const app = initializeApp(firebaseConfig);
