@@ -1,6 +1,6 @@
-import { seedNumbers } from "../seedNumbers"; // se o Admin estiver em src/pages/Admin.tsx
 import { useEffect, useMemo, useState } from "react";
-import { auth, db } from "../firebase"; // ajuste o caminho se necessário
+import { seedNumbers } from "../seedNumbers";
+import { auth, db } from "../firebase";
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -21,12 +21,12 @@ import {
 const ADMIN_EMAIL = "gelysonetatiana@gmail.com";
 
 type RifaNumber = {
-  id: string; // doc id
-  number: number; // 1..300
+  id: string;
+  number: number;
   status: "AVAILABLE" | "RESERVED" | "PAID";
   name?: string;
   whatsapp?: string;
-  reservedAt?: any; // Timestamp
+  reservedAt?: any;
 };
 
 function formatNumber(n: number) {
@@ -60,37 +60,26 @@ export default function Admin() {
 
   const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
 
-  // Firestore realtime: apenas RESERVED
+  // 🔥 Firestore realtime – somente RESERVED
   useEffect(() => {
     if (!isAdmin) return;
 
     setLoadingList(true);
 
-    // Ajuste o nome da coleção caso seja diferente:
-    // Ex: "numbers", "rifa", "tickets", etc.
-    const colRef = collection(db, "numbers");
-
     const q = query(
-      colRef,
+      collection(db, "numbers"),
       where("status", "==", "RESERVED"),
       orderBy("number", "asc")
     );
 
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const data: RifaNumber[] = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
-        setItems(data);
-        setLoadingList(false);
-      },
-      (err) => {
-        console.error("Erro ao ler RESERVED:", err);
-        setLoadingList(false);
-      }
-    );
+    const unsub = onSnapshot(q, (snap) => {
+      const data: RifaNumber[] = snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as any),
+      }));
+      setItems(data);
+      setLoadingList(false);
+    });
 
     return () => unsub();
   }, [isAdmin]);
@@ -121,17 +110,14 @@ export default function Admin() {
     }
   }
 
-  // UI auth
+  // 🔐 Auth UI
   if (loadingAuth) return <div style={{ padding: 20 }}>Carregando…</div>;
 
   if (!user) {
     return (
       <div style={{ padding: 20 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900 }}>🔒 Área Admin</h1>
-        <p>Faça login com Google para acessar.</p>
-        <button onClick={login} style={{ padding: 10, cursor: "pointer" }}>
-          Entrar com Google
-        </button>
+        <h1>🔒 Área Admin</h1>
+        <button onClick={login}>Entrar com Google</button>
       </div>
     );
   }
@@ -139,88 +125,78 @@ export default function Admin() {
   if (!isAdmin) {
     return (
       <div style={{ padding: 20 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 900 }}>⛔ Acesso negado</h1>
-        <p>
-          Você entrou como: <b>{user.email}</b>
-        </p>
-        <p>
-          Somente <b>{ADMIN_EMAIL}</b> pode acessar.
-        </p>
-       <button
-  onClick={seedNumbers}
-  style={{ padding: 10, cursor: "pointer", marginRight: 10 }}
->
-  ⚡ Criar 300 números
-</button>
-
+        <h1>⛔ Acesso negado</h1>
+        <p>{user.email}</p>
+        <button onClick={logout}>Sair</button>
       </div>
     );
   }
 
-  // UI admin
+  // ✅ ADMIN LIBERADO
   return (
     <div style={{ padding: 20 }}>
-      <h1 style={{ fontSize: 32, fontWeight: 900, color: "red" }}>✅ ÁREA ADMIN</h1>
+      <h1 style={{ color: "red" }}>✅ ÁREA ADMIN</h1>
       <p>
         Logado como: <b>{user.email}</b>
       </p>
-      <button onClick={logout} style={{ padding: 10, cursor: "pointer" }}>
+
+      <button onClick={logout} style={{ marginRight: 10 }}>
         Sair
+      </button>
+
+      <button
+        onClick={seedNumbers}
+        style={{
+          padding: "8px 12px",
+          cursor: "pointer",
+          background: "#0d6efd",
+          color: "#fff",
+          border: "none",
+          borderRadius: 4,
+          fontWeight: "bold",
+        }}
+      >
+        ⚡ Criar 300 números
       </button>
 
       <hr style={{ margin: "20px 0" }} />
 
-      <h2 style={{ fontSize: 20, marginBottom: 10 }}>🟡 Reservados (aguardando pagamento)</h2>
+      <h2>🟡 Reservados</h2>
 
       {loadingList ? (
-        <p>Carregando lista…</p>
+        <p>Carregando…</p>
       ) : items.length === 0 ? (
-        <p>Nenhum número reservado no momento.</p>
+        <p>Nenhum número reservado.</p>
       ) : (
-        <div style={{ display: "grid", gap: 10 }}>
-          {items.map((it) => (
-            <div
-              key={it.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 8,
-                padding: 12,
-              }}
+        items.map((it) => (
+          <div
+            key={it.id}
+            style={{
+              border: "1px solid #ccc",
+              padding: 10,
+              marginBottom: 10,
+            }}
+          >
+            <b>Nº {formatNumber(it.number)}</b>
+            <div>Nome: {it.name}</div>
+            <div>WhatsApp: {it.whatsapp}</div>
+
+            <button
+              onClick={() => confirmarPago(it)}
+              disabled={busyId === it.id}
+              style={{ marginRight: 10 }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 900 }}>
-                    Nº {formatNumber(it.number)}
-                  </div>
-                  <div>
-                    <b>Nome:</b> {it.name || "-"}
-                  </div>
-                  <div>
-                    <b>WhatsApp:</b> {it.whatsapp || "-"}
-                  </div>
-                </div>
+              ✅ PAGO
+            </button>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <button
-                    onClick={() => confirmarPago(it)}
-                    disabled={busyId === it.id}
-                    style={{ padding: "10px 12px", cursor: "pointer" }}
-                  >
-                    ✅ Confirmar PAGO
-                  </button>
-
-                  <button
-                    onClick={() => liberar(it)}
-                    disabled={busyId === it.id}
-                    style={{ padding: "10px 12px", cursor: "pointer" }}
-                  >
-                    ♻️ Liberar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            <button
+              onClick={() => liberar(it)}
+              disabled={busyId === it.id}
+            >
+              ♻️ LIBERAR
+            </button>
+          </div>
+        ))
       )}
     </div>
   );
